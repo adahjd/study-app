@@ -1,0 +1,26 @@
+# Streamlit
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+
+# Database (contains personal data)
+study_data.db
+
+# Images (user uploaded)
+images/*.png
+images/*.jpg
+images/*.jpeg
+images/*.webp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
