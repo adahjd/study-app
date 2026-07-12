@@ -459,13 +459,17 @@ with tabs[3]:
         img_bytes = st.file_uploader("从相册选择", type=["png", "jpg", "jpeg", "webp"], key="file_upload", label_visibility="collapsed")
 
     if img_bytes:
+        # Read bytes first (avoid stream consumption issues)
+        img_data = img_bytes.getvalue() if hasattr(img_bytes, "getvalue") else img_bytes.read()
+        img_bytes.seek(0)  # Reset for Image.open
         uploaded_image = Image.open(img_bytes)
         st.image(uploaded_image, caption="预览", use_container_width=True)
 
-        # Save the image locally
+        # Save raw bytes to disk (more reliable than PIL save)
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
         saved_path = os.path.join(IMAGE_DIR, f"photo_{timestamp}.png")
-        uploaded_image.save(saved_path)
+        with open(saved_path, "wb") as f:
+            f.write(img_data)
 
         st.markdown("---")
         st.markdown("### 💾 保存为错题")
