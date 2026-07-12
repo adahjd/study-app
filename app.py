@@ -9,15 +9,15 @@ from PIL import Image
 import plotly.express as px
 import plotly.graph_objects as go
 
-# 鈹€鈹€ Page config 鈹€鈹€
+# ── Page config ──
 st.set_page_config(
-    page_title="涓汉鐭ヨ瘑涓庨敊棰樺簱",
-    page_icon="馃摎",
+    page_title="个人知识与错题库",
+    page_icon="📚",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# 鈹€鈹€ Custom CSS + PWA meta injection 鈹€鈹€
+# ── Custom CSS + PWA meta injection ──
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -41,7 +41,7 @@ st.markdown("""
     }
     .stButton > button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; }
 
-    /* 鈹€鈹€ Mobile responsive 鈹€鈹€ */
+    /* ── Mobile responsive ── */
     @media (max-width: 768px) {
         .main-header { font-size: 1.3rem !important; }
         .sub-header { font-size: 0.75rem !important; }
@@ -67,10 +67,10 @@ st.markdown("""
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="瀛︿範搴?>
+<meta name="apple-mobile-web-app-title" content="学习库">
 <meta name="theme-color" content="#667eea">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23667eea'/><text x='50' y='68' font-size='52' text-anchor='middle'>馃摎</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23667eea'/><text x='50' y='68' font-size='52' text-anchor='middle'>📚</text></svg>">
 <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIuS4quS6uuefpeivhuS4jumUmeivlemFkyIsCiAgInNob3J0X25hbWUiOiAi5a2m5Lmg5bqTIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmOGY5ZmEiLAogICJ0aGVtZV9jb2xvciI6ICIjNjY3ZWVhIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sLDxzdmcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PHJlY3Qgd2lkdGg9JzEwMCcgaGVpZ2h0PScxMDAnIHJ4PScyMCcgZmlsbD0nIzY2N2VlYScvPjx0ZXh0IHg9JzUwJyB5PSc2OCcgZm9udC1zaXplPSc1MicgdGV4dC1hbmNob3I9J21pZGRsZSc+8J+TmjwvdGV4dD48L3N2Zz4iLAogICAgICAic2l6ZXMiOiAiMTkyeDE5MiIsCiAgICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiCiAgICB9CiAgXQp9">
 
 <script>
@@ -96,7 +96,7 @@ if ('serviceWorker' in navigator) {
 </script>
 """, unsafe_allow_html=True)
 
-# 鈹€鈹€ Database setup 鈹€鈹€
+# ── Database setup ──
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "study_data.db")
 IMAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images")
 os.makedirs(IMAGE_DIR, exist_ok=True)
@@ -125,7 +125,7 @@ def init_db():
 init_db()
 
 
-# 鈹€鈹€ DB helpers 鈹€鈹€
+# ── DB helpers ──
 def get_conn():
     return sqlite3.connect(DB_FILE, detect_types=sqlite3.PARSE_DECLTYPES)
 
@@ -184,8 +184,8 @@ def get_all_entries():
 def get_stats():
     conn = get_conn()
     total = conn.execute("SELECT COUNT(*) FROM entries").fetchone()[0]
-    knowledge = conn.execute("SELECT COUNT(*) FROM entries WHERE type='鐭ヨ瘑鐐?").fetchone()[0]
-    error = conn.execute("SELECT COUNT(*) FROM entries WHERE type='閿欓'").fetchone()[0]
+    knowledge = conn.execute("SELECT COUNT(*) FROM entries WHERE type='知识点'").fetchone()[0]
+    error = conn.execute("SELECT COUNT(*) FROM entries WHERE type='错题'").fetchone()[0]
     subject_counts = pd.read_sql_query(
         "SELECT subject, COUNT(*) as cnt FROM entries GROUP BY subject", conn
     )
@@ -209,11 +209,11 @@ def get_stats():
 def export_df(df):
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="瀛︿範璁板綍")
+        df.to_excel(writer, index=False, sheet_name="学习记录")
     return output.getvalue()
 
 
-# 鈹€鈹€ OCR helper 鈹€鈹€
+# ── OCR helper ──
 def run_ocr(image: Image.Image) -> str:
     """Run EasyOCR on an image. Returns recognized text or raises."""
     import easyocr
@@ -226,78 +226,80 @@ def run_ocr(image: Image.Image) -> str:
     recognized_text = "\n".join([r[1] for r in results])
 
     if not recognized_text.strip():
-        raise ValueError("鏈瘑鍒埌鏂囧瓧锛岃纭繚鍥剧墖娓呮櫚涓斿寘鍚枃瀛楀唴瀹?)
+        raise ValueError("未识别到文字，请确保图片清晰且包含文字内容")
 
     return recognized_text, temp_path
 
 
-# 鈹€鈹€ Session state init 鈹€鈹€
+# ── Session state init ──
 if "edit_id" not in st.session_state:
     st.session_state.edit_id = None
 if "tab" not in st.session_state:
-    st.session_state.tab = "馃搳 鏁版嵁鐪嬫澘"
+    st.session_state.tab = "📊 数据看板"
 
 
-# 鈹€鈹€ Header 鈹€鈹€
-st.markdown('<p class="main-header">馃摎 涓汉鐭ヨ瘑涓庨敊棰樼鐞嗙郴缁?/p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">璁板綍 路 澶嶄範 路 鎺屾彙 路 鎴愰暱</p>', unsafe_allow_html=True)
+# ── Header ──
+st.markdown('<p class="main-header">📚 个人知识与错题管理系统</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">记录 · 复习 · 掌握 · 成长</p>', unsafe_allow_html=True)
 
-# 鈹€鈹€ Tabs 鈹€鈹€
-tab_labels = ["馃搳 鐪嬫澘", "馃摑 娣诲姞", "馃攳 绠＄悊", "馃摲 鎷嶇収", "馃搵 澶嶄範"]
+# ── Tabs ──
+tab_labels = ["📊 看板", "📝 添加", "🔍 管理", "📷 拍照", "📋 复习"]
 tabs = st.tabs(tab_labels)
 
-# 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?# TAB 1: Dashboard
-# 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?with tabs[0]:
+# ═══════════════════════════════════════
+# TAB 1: Dashboard
+# ═══════════════════════════════════════
+with tabs[0]:
     stats = get_stats()
 
     if stats["total"] == 0:
-        st.info("馃憢 娆㈣繋锛佺洰鍓嶈繕娌℃湁鏁版嵁锛屽厛鍘汇€屾坊鍔犮€嶆垨銆屾媿鐓с€嶅紑濮嬪惂锛?)
+        st.info("👋 欢迎！目前还没有数据，先去「添加」或「拍照」开始吧！")
     else:
-        # Stats cards 鈥?use 2 cols on mobile via container queries handled by Streamlit auto-wrap
+        # Stats cards — use 2 cols on mobile via container queries handled by Streamlit auto-wrap
         c1, c2, c3, c4 = st.columns(4)
         with c1:
             st.markdown(
-                f'<div class="stat-card"><div class="stat-value">{stats["total"]}</div><div class="stat-label">鎬昏褰?/div></div>',
+                f'<div class="stat-card"><div class="stat-value">{stats["total"]}</div><div class="stat-label">总记录</div></div>',
                 unsafe_allow_html=True,
             )
         with c2:
             st.markdown(
-                f'<div class="stat-card green"><div class="stat-value">{stats["knowledge"]}</div><div class="stat-label">鐭ヨ瘑鐐?/div></div>',
+                f'<div class="stat-card green"><div class="stat-value">{stats["knowledge"]}</div><div class="stat-label">知识点</div></div>',
                 unsafe_allow_html=True,
             )
         with c3:
             st.markdown(
-                f'<div class="stat-card orange"><div class="stat-value">{stats["error"]}</div><div class="stat-label">閿欓</div></div>',
+                f'<div class="stat-card orange"><div class="stat-value">{stats["error"]}</div><div class="stat-label">错题</div></div>',
                 unsafe_allow_html=True,
             )
         with c4:
             streak = len(stats["recent"]) if not stats["recent"].empty else 0
             st.markdown(
-                f'<div class="stat-card blue"><div class="stat-value">{streak}</div><div class="stat-label">娲昏穬澶╂暟</div></div>',
+                f'<div class="stat-card blue"><div class="stat-value">{streak}</div><div class="stat-label">活跃天数</div></div>',
                 unsafe_allow_html=True,
             )
 
         st.markdown("---")
 
-        # Charts 鈥?stack on mobile
+        # Charts — stack on mobile
         col_left, col_right = st.columns(2)
 
         with col_left:
-            st.subheader("馃搱 姣忔棩璁板綍瓒嬪娍")
+            st.subheader("📈 每日记录趋势")
             if not stats["recent"].empty:
                 recent_df = stats["recent"].sort_values("date")
                 fig = px.line(
                     recent_df, x="date", y="cnt", markers=True,
-                    labels={"date": "鏃ユ湡", "cnt": "璁板綍鏁?},
+                    labels={"date": "日期", "cnt": "记录数"},
                 )
                 fig.update_traces(line_color="#667eea", marker=dict(size=8, color="#764ba2"))
                 fig.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10))
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.info("鏆傛棤鏁版嵁")
+                st.info("暂无数据")
 
         with col_right:
-            st.subheader("馃梻 绉戠洰鍒嗗竷")
+            st.subheader("🗂 科目分布")
             if not stats["subject_counts"].empty:
                 fig = px.pie(
                     stats["subject_counts"], names="subject", values="cnt",
@@ -307,60 +309,62 @@ tabs = st.tabs(tab_labels)
                 fig.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10))
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.info("鏆傛棤鏁版嵁")
+                st.info("暂无数据")
 
         st.markdown("---")
 
-        st.subheader("馃幆 鎺屾彙绋嬪害 / 閿欒鍘熷洜鍒嗗竷")
+        st.subheader("🎯 掌握程度 / 错误原因分布")
         if not stats["detail_counts"].empty:
             top_details = stats["detail_counts"].sort_values("cnt", ascending=False).head(10)
             fig = px.bar(
                 top_details, x="detail", y="cnt",
-                labels={"detail": "鏍囩", "cnt": "鏁伴噺"},
+                labels={"detail": "标签", "cnt": "数量"},
                 color="cnt", color_continuous_scale="Viridis",
             )
             fig.update_layout(height=350, margin=dict(l=10, r=10, t=10, b=10))
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("鏆傛棤鏁版嵁")
+            st.info("暂无数据")
 
 
-# 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?# TAB 2: Add Entry
-# 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?with tabs[1]:
-    st.subheader("鉁忥笍 璁板綍鏂板唴瀹?)
+# ═══════════════════════════════════════
+# TAB 2: Add Entry
+# ═══════════════════════════════════════
+with tabs[1]:
+    st.subheader("✏️ 记录新内容")
 
     if st.session_state.edit_id:
-        st.warning(f"鈿狅笍 姝ｅ湪缂栬緫璁板綍 #{st.session_state.edit_id}锛岃鍏堝畬鎴愭垨鍙栨秷缂栬緫")
-        if st.button("鉂?鍙栨秷缂栬緫", key="cancel_edit_add"):
+        st.warning(f"⚠️ 正在编辑记录 #{st.session_state.edit_id}，请先完成或取消编辑")
+        if st.button("❌ 取消编辑", key="cancel_edit_add"):
             st.session_state.edit_id = None
             st.rerun()
     else:
         col1, col2, col3 = st.columns(3)
         with col1:
-            data_type = st.selectbox("绫诲瀷", ["鐭ヨ瘑鐐?, "閿欓"], key="add_type")
+            data_type = st.selectbox("类型", ["知识点", "错题"], key="add_type")
         with col2:
-            subject = st.selectbox("绉戠洰", ["鏁板", "鑻辫", "璇枃", "鐗╃悊", "鍖栧", "鐢熺墿", "鍘嗗彶", "鍦扮悊", "鏀挎不", "鍏朵粬"], key="add_subject")
+            subject = st.selectbox("科目", ["数学", "英语", "语文", "物理", "化学", "生物", "历史", "地理", "政治", "其他"], key="add_subject")
         with col3:
-            entry_date = st.date_input("鏃ユ湡", datetime.date.today(), key="add_date")
+            entry_date = st.date_input("日期", datetime.date.today(), key="add_date")
 
         content = st.text_area(
-            "鍐呭鎻忚堪",
-            placeholder="鐭ヨ瘑鐐癸細鍐欎笅浣犺璁颁綇鐨勫唴瀹?..\n閿欓锛氱矘璐撮鐩垨鎻忚堪閿欒...",
+            "内容描述",
+            placeholder="知识点：写下你要记住的内容...\n错题：粘贴题目或描述错误...",
             height=150,
             key="add_content",
         )
 
-        if data_type == "鐭ヨ瘑鐐?:
-            detail_label = "鎺屾彙绋嬪害"
-            detail_placeholder = "渚嬪锛氬凡鎺屾彙銆佸熀鏈悊瑙ｃ€侀渶澶嶄範銆佸畬鍏ㄤ笉浼?
+        if data_type == "知识点":
+            detail_label = "掌握程度"
+            detail_placeholder = "例如：已掌握、基本理解、需复习、完全不会"
         else:
-            detail_label = "閿欒鍘熷洜鍒嗘瀽"
-            detail_placeholder = "渚嬪锛氳绠楀け璇€佹蹇典笉娓呫€佸棰橀敊璇€佸叕寮忚閿?
+            detail_label = "错误原因分析"
+            detail_placeholder = "例如：计算失误、概念不清、审题错误、公式记错"
         detail = st.text_input(detail_label, placeholder=detail_placeholder, key="add_detail")
 
-        if st.button("馃捑 淇濆瓨鍒板簱", use_container_width=True, key="save_entry"):
+        if st.button("💾 保存到库", use_container_width=True, key="save_entry"):
             if not content.strip():
-                st.error("鍐呭鎻忚堪涓嶈兘涓虹┖锛?)
+                st.error("内容描述不能为空！")
             else:
                 add_entry(
                     entry_date.strftime("%Y-%m-%d"),
@@ -369,30 +373,32 @@ tabs = st.tabs(tab_labels)
                     content.strip(),
                     detail.strip(),
                 )
-                st.success(f"鉁?鎴愬姛淇濆瓨涓€鏉°€恵data_type}銆戯紒")
+                st.success(f"✅ 成功保存一条【{data_type}】！")
                 st.rerun()
 
 
-# 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?# TAB 3: Browse & Manage
-# 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?with tabs[2]:
-    st.subheader("馃攳 娴忚 & 绠＄悊")
+# ═══════════════════════════════════════
+# TAB 3: Browse & Manage
+# ═══════════════════════════════════════
+with tabs[2]:
+    st.subheader("🔍 浏览 & 管理")
 
     df = get_all_entries()
 
     if df.empty:
-        st.info("馃摥 搴撻噷杩樻病鏈夋暟鎹紝鍘绘坊鍔犱竴浜涘惂锛?)
+        st.info("📭 库里还没有数据，去添加一些吧！")
     else:
         f1, f2, f3 = st.columns(3)
         with f1:
-            filter_type = st.selectbox("绫诲瀷绛涢€?, ["鍏ㄩ儴", "鐭ヨ瘑鐐?, "閿欓"], key="browse_type")
+            filter_type = st.selectbox("类型筛选", ["全部", "知识点", "错题"], key="browse_type")
         with f2:
             all_subjects = sorted(df["subject"].unique())
-            filter_subject = st.multiselect("绉戠洰绛涢€?, all_subjects, default=all_subjects, key="browse_subject")
+            filter_subject = st.multiselect("科目筛选", all_subjects, default=all_subjects, key="browse_subject")
         with f3:
-            search_term = st.text_input("馃攷 鎼滅储", placeholder="杈撳叆鍏抽敭璇?..", key="browse_search")
+            search_term = st.text_input("🔎 搜索", placeholder="输入关键词...", key="browse_search")
 
         filtered = df.copy()
-        if filter_type != "鍏ㄩ儴":
+        if filter_type != "全部":
             filtered = filtered[filtered["type"] == filter_type]
         if filter_subject:
             filtered = filtered[filtered["subject"].isin(filter_subject)]
@@ -402,64 +408,64 @@ tabs = st.tabs(tab_labels)
                 | filtered["detail"].str.contains(search_term, case=False, na=False)
             ]
 
-        st.caption(f"鍏?{len(filtered)} 鏉¤褰?)
+        st.caption(f"共 {len(filtered)} 条记录")
 
         for i, row in filtered.iterrows():
             rid = row["id"]
             preview = row["content"][:50].replace("\n", " ")
             with st.expander(f"#{rid} | {row['date']} | {row['type']} | {row['subject']} | {preview}...", expanded=(st.session_state.edit_id == rid)):
                 if st.session_state.edit_id == rid:
-                    subjects_list = ["鏁板", "鑻辫", "璇枃", "鐗╃悊", "鍖栧", "鐢熺墿", "鍘嗗彶", "鍦扮悊", "鏀挎不", "鍏朵粬"]
+                    subjects_list = ["数学", "英语", "语文", "物理", "化学", "生物", "历史", "地理", "政治", "其他"]
                     subj_idx = subjects_list.index(row["subject"]) if row["subject"] in subjects_list else 0
                     e1, e2, e3 = st.columns(3)
                     with e1:
-                        new_type = st.selectbox("绫诲瀷", ["鐭ヨ瘑鐐?, "閿欓"], index=0 if row["type"] == "鐭ヨ瘑鐐? else 1, key=f"ed_type_{rid}")
+                        new_type = st.selectbox("类型", ["知识点", "错题"], index=0 if row["type"] == "知识点" else 1, key=f"ed_type_{rid}")
                     with e2:
-                        new_subject = st.selectbox("绉戠洰", subjects_list, index=subj_idx, key=f"ed_subject_{rid}")
+                        new_subject = st.selectbox("科目", subjects_list, index=subj_idx, key=f"ed_subject_{rid}")
                     with e3:
-                        new_date = st.date_input("鏃ユ湡", datetime.datetime.strptime(row["date"], "%Y-%m-%d").date(), key=f"ed_date_{rid}")
-                    new_content = st.text_area("鍐呭", value=row["content"], height=120, key=f"ed_content_{rid}")
-                    new_detail = st.text_input("鎺屾彙绋嬪害/閿欒鍘熷洜", value=row["detail"] if row["detail"] else "", key=f"ed_detail_{rid}")
+                        new_date = st.date_input("日期", datetime.datetime.strptime(row["date"], "%Y-%m-%d").date(), key=f"ed_date_{rid}")
+                    new_content = st.text_area("内容", value=row["content"], height=120, key=f"ed_content_{rid}")
+                    new_detail = st.text_input("掌握程度/错误原因", value=row["detail"] if row["detail"] else "", key=f"ed_detail_{rid}")
 
                     bc1, bc2 = st.columns(2)
                     with bc1:
-                        if st.button("馃捑 淇濆瓨淇敼", key=f"save_ed_{rid}"):
+                        if st.button("💾 保存修改", key=f"save_ed_{rid}"):
                             update_entry(rid, new_date.strftime("%Y-%m-%d"), new_type, new_subject, new_content.strip(), new_detail.strip())
                             st.session_state.edit_id = None
-                            st.success("鉁?淇敼宸蹭繚瀛橈紒")
+                            st.success("✅ 修改已保存！")
                             st.rerun()
                     with bc2:
-                        if st.button("鉂?鍙栨秷", key=f"cancel_ed_{rid}"):
+                        if st.button("❌ 取消", key=f"cancel_ed_{rid}"):
                             st.session_state.edit_id = None
                             st.rerun()
 
-                    if st.button("馃棏 鍒犻櫎", key=f"del_ed_{rid}", type="secondary"):
+                    if st.button("🗑 删除", key=f"del_ed_{rid}", type="secondary"):
                         delete_entry(rid)
                         st.session_state.edit_id = None
-                        st.success("馃棏 宸插垹闄わ紒")
+                        st.success("🗑 已删除！")
                         st.rerun()
                 else:
-                    st.markdown(f"**鍐呭锛?* {row['content']}")
+                    st.markdown(f"**内容：** {row['content']}")
                     if row["detail"]:
-                        st.markdown(f"**鎺屾彙绋嬪害/閿欒鍘熷洜锛?* {row['detail']}")
+                        st.markdown(f"**掌握程度/错误原因：** {row['detail']}")
                     if row["image_path"] and os.path.exists(row["image_path"]):
-                        st.image(row["image_path"], caption="闄勪欢鍥剧墖", width=300)
-                    st.caption(f"澶嶄範 {row['review_count']} 娆?| 鏈€杩戝涔? {row['last_reviewed'] or '浠庢湭'}")
+                        st.image(row["image_path"], caption="附件图片", width=300)
+                    st.caption(f"复习 {row['review_count']} 次 | 最近复习: {row['last_reviewed'] or '从未'}")
 
                     bc1, bc2, bc3 = st.columns(3)
                     with bc1:
-                        if st.button("鉁忥笍 缂栬緫", key=f"edit_{rid}"):
+                        if st.button("✏️ 编辑", key=f"edit_{rid}"):
                             st.session_state.edit_id = rid
                             st.rerun()
                     with bc2:
-                        if st.button("鉁?宸插涔?, key=f"review_{rid}"):
+                        if st.button("✅ 已复习", key=f"review_{rid}"):
                             mark_reviewed(rid)
-                            st.success("宸叉爣璁板涔狅紒")
+                            st.success("已标记复习！")
                             st.rerun()
                     with bc3:
-                        if st.button("馃棏 鍒犻櫎", key=f"del_{rid}"):
+                        if st.button("🗑 删除", key=f"del_{rid}"):
                             delete_entry(rid)
-                            st.success("宸插垹闄わ紒")
+                            st.success("已删除！")
                             st.rerun()
 
         st.markdown("---")
@@ -467,125 +473,129 @@ tabs = st.tabs(tab_labels)
         with ec1:
             excel_data = export_df(filtered[["date", "type", "subject", "content", "detail", "review_count", "last_reviewed"]])
             st.download_button(
-                "馃摜 瀵煎嚭 Excel", excel_data, "瀛︿範璁板綍瀵煎嚭.xlsx",
+                "📥 导出 Excel", excel_data, "学习记录导出.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
             )
         with ec2:
             csv_data = filtered[["date", "type", "subject", "content", "detail"]].to_csv(index=False).encode("utf-8-sig")
             st.download_button(
-                "馃摜 瀵煎嚭 CSV", csv_data, "瀛︿範璁板綍瀵煎嚭.csv", "text/csv",
+                "📥 导出 CSV", csv_data, "学习记录导出.csv", "text/csv",
                 use_container_width=True,
             )
 
 
-# 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?# TAB 4: Photo Capture (camera + album)
-# 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?with tabs[3]:
-    st.subheader("馃摲 鎷嶇収鏀堕泦閿欓")
-    st.caption("鐢ㄧ浉鏈烘媿鐓ф垨浠庣浉鍐岄€夋嫨锛岃嚜鍔ㄨ瘑鍒枃瀛?)
+# ═══════════════════════════════════════
+# TAB 4: Photo Capture (camera + album)
+# ═══════════════════════════════════════
+with tabs[3]:
+    st.subheader("📷 拍照收集错题")
+    st.caption("用相机拍照或从相册选择，自动识别文字")
 
     # Two options: camera or album
     capture_method = st.radio(
-        "閫夋嫨鏂瑰紡",
-        ["馃摳 鐩存帴鎷嶇収", "馃柤 浠庣浉鍐岄€夋嫨"],
+        "选择方式",
+        ["📸 直接拍照", "🖼 从相册选择"],
         horizontal=True,
         key="capture_method",
     )
 
     uploaded_image = None
 
-    if capture_method == "馃摳 鐩存帴鎷嶇収":
-        camera_img = st.camera_input("瀵瑰噯閿欓鎷嶇収", key="camera_input", label_visibility="collapsed")
+    if capture_method == "📸 直接拍照":
+        camera_img = st.camera_input("对准错题拍照", key="camera_input", label_visibility="collapsed")
         if camera_img:
             uploaded_image = Image.open(camera_img)
-            st.image(uploaded_image, caption="鎷嶆憚鐨勭収鐗?, use_container_width=True)
+            st.image(uploaded_image, caption="拍摄的照片", use_container_width=True)
     else:
-        file_img = st.file_uploader("浠庣浉鍐岄€夋嫨", type=["png", "jpg", "jpeg", "webp"], key="file_upload", label_visibility="collapsed")
+        file_img = st.file_uploader("从相册选择", type=["png", "jpg", "jpeg", "webp"], key="file_upload", label_visibility="collapsed")
         if file_img:
             uploaded_image = Image.open(file_img)
-            st.image(uploaded_image, caption="閫夋嫨鐨勫浘鐗?, use_container_width=True)
+            st.image(uploaded_image, caption="选择的图片", use_container_width=True)
 
-    # OCR section 鈥?shared by both inputs
+    # OCR section — shared by both inputs
     if uploaded_image:
-        if st.button("馃攳 寮€濮嬭瘑鍒枃瀛?, use_container_width=True, key="run_ocr"):
-            with st.spinner("鈴?姝ｅ湪鍔犺浇 OCR 寮曟搸锛堥娆′娇鐢ㄩ渶涓嬭浇妯″瀷锛岀害闇€ 1-2 鍒嗛挓锛?.."):
+        if st.button("🔍 开始识别文字", use_container_width=True, key="run_ocr"):
+            with st.spinner("⏳ 正在加载 OCR 引擎（首次使用需下载模型，约需 1-2 分钟）..."):
                 try:
                     recognized_text, saved_path = run_ocr(uploaded_image)
                     st.session_state.ocr_text = recognized_text
                     st.session_state.ocr_image_path = saved_path
-                    st.success(f"鉁?璇嗗埆鎴愬姛锛?)
-                    st.text_area("璇嗗埆鍐呭", recognized_text, height=200, key="ocr_result_display")
+                    st.success(f"✅ 识别成功！")
+                    st.text_area("识别内容", recognized_text, height=200, key="ocr_result_display")
                 except ValueError as e:
-                    st.warning(f"鈿狅笍 {e}")
+                    st.warning(f"⚠️ {e}")
                     st.session_state.ocr_text = ""
                     st.session_state.ocr_image_path = ""
                 except Exception as e:
                     err_msg = str(e)
                     if "Downloading" in err_msg or "download" in err_msg.lower():
-                        st.error("馃寪 OCR 妯″瀷涓嬭浇澶辫触锛岃妫€鏌ョ綉缁滆繛鎺ュ悗閲嶈瘯銆傚鏋滃湪 Streamlit Cloud 涓婏紝鍐峰惎鍔ㄦ椂涓嬭浇鍙兘瓒呮椂锛岃绋嶇瓑鐗囧埢鍐嶈瘯銆?)
+                        st.error("🌐 OCR 模型下载失败，请检查网络连接后重试。如果在 Streamlit Cloud 上，冷启动时下载可能超时，请稍等片刻再试。")
                     else:
-                        st.error(f"OCR 璇嗗埆澶辫触: {e}")
+                        st.error(f"OCR 识别失败: {e}")
                     st.session_state.ocr_text = ""
                     st.session_state.ocr_image_path = ""
 
         # Show save form if OCR completed
         if "ocr_text" in st.session_state and st.session_state.ocr_text:
             st.markdown("---")
-            st.markdown("### 馃捑 淇濆瓨涓洪敊棰?)
+            st.markdown("### 💾 保存为错题")
 
             sc1, sc2 = st.columns(2)
             with sc1:
-                ocr_subject = st.selectbox("绉戠洰", ["鏁板", "鑻辫", "璇枃", "鐗╃悊", "鍖栧", "鐢熺墿", "鍘嗗彶", "鍦扮悊", "鏀挎不", "鍏朵粬"], key="ocr_subject")
+                ocr_subject = st.selectbox("科目", ["数学", "英语", "语文", "物理", "化学", "生物", "历史", "地理", "政治", "其他"], key="ocr_subject")
             with sc2:
-                ocr_reason = st.text_input("閿欒鍘熷洜鍒嗘瀽", placeholder="渚嬪锛氳绠楀け璇€佹蹇典笉娓?..", key="ocr_reason")
+                ocr_reason = st.text_input("错误原因分析", placeholder="例如：计算失误、概念不清...", key="ocr_reason")
 
-            ocr_content = st.text_area("閿欓鍐呭锛堝彲缂栬緫锛?, value=st.session_state.ocr_text, height=150, key="ocr_content_edit")
+            ocr_content = st.text_area("错题内容（可编辑）", value=st.session_state.ocr_text, height=150, key="ocr_content_edit")
 
-            if st.button("馃捑 淇濆瓨閿欓", use_container_width=True, key="save_ocr"):
+            if st.button("💾 保存错题", use_container_width=True, key="save_ocr"):
                 if ocr_content.strip():
                     add_entry(
                         datetime.date.today().strftime("%Y-%m-%d"),
-                        "閿欓",
+                        "错题",
                         ocr_subject,
                         ocr_content.strip(),
                         ocr_reason.strip(),
                         st.session_state.get("ocr_image_path", ""),
                     )
-                    st.success("鉁?閿欓宸蹭繚瀛橈紒")
+                    st.success("✅ 错题已保存！")
                     for k in ["ocr_text", "ocr_image_path"]:
                         if k in st.session_state:
                             del st.session_state[k]
                     st.rerun()
                 else:
-                    st.error("鍐呭涓嶈兘涓虹┖锛?)
+                    st.error("内容不能为空！")
 
 
-# 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?# TAB 5: Review Mode
-# 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?with tabs[4]:
-    st.subheader("馃搵 鏅鸿兘澶嶄範")
+# ═══════════════════════════════════════
+# TAB 5: Review Mode
+# ═══════════════════════════════════════
+with tabs[4]:
+    st.subheader("📋 智能复习")
 
     df = get_all_entries()
 
     if df.empty:
-        st.info("杩樻病鏈夋暟鎹紝鍏堟坊鍔犱竴浜涜褰曞惂锛?)
+        st.info("还没有数据，先添加一些记录吧！")
     else:
         r1, r2, r3 = st.columns(3)
         with r1:
-            review_type = st.selectbox("绫诲瀷", ["鍏ㄩ儴", "鐭ヨ瘑鐐?, "閿欓"], key="review_type")
+            review_type = st.selectbox("类型", ["全部", "知识点", "错题"], key="review_type")
         with r2:
-            review_subject = st.selectbox("绉戠洰", ["鍏ㄩ儴"] + sorted(df["subject"].unique().tolist()), key="review_subject")
+            review_subject = st.selectbox("科目", ["全部"] + sorted(df["subject"].unique().tolist()), key="review_subject")
         with r3:
-            sort_method = st.selectbox("鎺掑簭", ["鏈€灏戝涔犱紭鍏?, "鏈€涔呮湭澶嶄範浼樺厛", "闅忔満"], key="review_sort")
+            sort_method = st.selectbox("排序", ["最少复习优先", "最久未复习优先", "随机"], key="review_sort")
 
         review_df = df.copy()
-        if review_type != "鍏ㄩ儴":
+        if review_type != "全部":
             review_df = review_df[review_df["type"] == review_type]
-        if review_subject != "鍏ㄩ儴":
+        if review_subject != "全部":
             review_df = review_df[review_df["subject"] == review_subject]
 
-        if sort_method == "鏈€灏戝涔犱紭鍏?:
+        if sort_method == "最少复习优先":
             review_df = review_df.sort_values(["review_count", "last_reviewed"])
-        elif sort_method == "鏈€涔呮湭澶嶄範浼樺厛":
+        elif sort_method == "最久未复习优先":
             def date_sort_key(d):
                 return d if d and d != "" else "2000-01-01"
             review_df["_sort_date"] = review_df["last_reviewed"].apply(date_sort_key)
@@ -594,7 +604,7 @@ tabs = st.tabs(tab_labels)
             review_df = review_df.sample(frac=1)
 
         if review_df.empty:
-            st.info("娌℃湁绗﹀悎鏉′欢鐨勮褰?)
+            st.info("没有符合条件的记录")
         else:
             if "review_index" not in st.session_state:
                 st.session_state.review_index = 0
@@ -606,15 +616,15 @@ tabs = st.tabs(tab_labels)
                 st.session_state.review_index = 0
                 idx = 0
 
-            st.progress((idx + 1) / total_review, f"绗?{idx+1} / {total_review} 鏉?)
+            st.progress((idx + 1) / total_review, f"第 {idx+1} / {total_review} 条")
 
             row = review_df.iloc[idx]
 
             with st.container(border=True):
                 st.markdown(f"### #{row['id']} | {row['type']} | {row['subject']}")
-                st.markdown(f"**鏃ユ湡锛?* {row['date']}")
+                st.markdown(f"**日期：** {row['date']}")
                 st.markdown("---")
-                st.markdown(f"**鍐呭锛?*")
+                st.markdown(f"**内容：**")
                 st.markdown(f"> {row['content']}")
 
                 if "reveal" not in st.session_state:
@@ -622,43 +632,43 @@ tabs = st.tabs(tab_labels)
 
                 rev_col1, rev_col2, rev_col3 = st.columns(3)
                 with rev_col1:
-                    if st.button("馃憗 鏄剧ず绛旀", use_container_width=True, key=f"reveal_{idx}"):
+                    if st.button("👁 显示答案", use_container_width=True, key=f"reveal_{idx}"):
                         st.session_state.reveal = True
                         st.rerun()
                 with rev_col2:
-                    if st.button("鉁?宸叉帉鎻?, use_container_width=True, key=f"mastered_{idx}"):
+                    if st.button("✅ 已掌握", use_container_width=True, key=f"mastered_{idx}"):
                         mark_reviewed(row["id"])
                         st.session_state.review_index += 1
                         st.session_state.reveal = False
                         st.rerun()
                 with rev_col3:
-                    if st.button("鈴?璺宠繃", use_container_width=True, key=f"skip_{idx}"):
+                    if st.button("⏭ 跳过", use_container_width=True, key=f"skip_{idx}"):
                         st.session_state.review_index += 1
                         st.session_state.reveal = False
                         st.rerun()
 
                 if st.session_state.reveal:
                     st.markdown("---")
-                    label = "鎺屾彙绋嬪害" if row["type"] == "鐭ヨ瘑鐐? else "閿欒鍘熷洜鍒嗘瀽"
-                    st.markdown(f"**{label}锛?*")
-                    st.info(row["detail"] if row["detail"] else "锛堟湭璁板綍锛?)
+                    label = "掌握程度" if row["type"] == "知识点" else "错误原因分析"
+                    st.markdown(f"**{label}：**")
+                    st.info(row["detail"] if row["detail"] else "（未记录）")
                     if row["image_path"] and os.path.exists(row["image_path"]):
                         st.image(row["image_path"], width=300)
-                    st.caption(f"宸插涔?{row['review_count']} 娆?| 鏈€杩? {row['last_reviewed'] or '浠庢湭'}")
+                    st.caption(f"已复习 {row['review_count']} 次 | 最近: {row['last_reviewed'] or '从未'}")
 
             nav1, nav2, nav3 = st.columns([1, 2, 1])
             with nav1:
-                if st.button("猬?涓婁竴鏉?, disabled=(idx == 0), use_container_width=True):
+                if st.button("⬅ 上一条", disabled=(idx == 0), use_container_width=True):
                     st.session_state.review_index -= 1
                     st.session_state.reveal = False
                     st.rerun()
             with nav3:
-                if st.button("涓嬩竴鏉?鉃?, disabled=(idx == total_review - 1), use_container_width=True):
+                if st.button("下一条 ➡", disabled=(idx == total_review - 1), use_container_width=True):
                     st.session_state.review_index += 1
                     st.session_state.reveal = False
                     st.rerun()
 
-            if st.button("馃攧 閲嶆柊寮€濮?, use_container_width=True):
+            if st.button("🔄 重新开始", use_container_width=True):
                 st.session_state.review_index = 0
                 st.session_state.reveal = False
                 st.rerun()
