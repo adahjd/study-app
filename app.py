@@ -213,24 +213,6 @@ def export_df(df):
     return output.getvalue()
 
 
-# ── OCR helper ──
-def run_ocr(image: Image.Image) -> str:
-    """Run EasyOCR on an image. Returns recognized text or raises."""
-    import easyocr
-
-    temp_path = os.path.join(IMAGE_DIR, f"temp_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
-    image.save(temp_path)
-
-    reader = easyocr.Reader(["ch_sim", "en"], gpu=False, verbose=False)
-    results = reader.readtext(temp_path)
-    recognized_text = "\n".join([r[1] for r in results])
-
-    if not recognized_text.strip():
-        raise ValueError("未识别到文字，请确保图片清晰且包含文字内容")
-
-    return recognized_text, temp_path
-
-
 # ── Session state init ──
 if "edit_id" not in st.session_state:
     st.session_state.edit_id = None
@@ -486,13 +468,13 @@ with tabs[2]:
 
 
 # ═══════════════════════════════════════
+
 # TAB 4: Photo Capture (camera + album)
 # ═══════════════════════════════════════
 with tabs[3]:
     st.subheader("📷 拍照收集错题")
-    st.caption("用相机拍照或从相册选择，自动识别文字")
+    st.caption("拍照或从相册选择，直接保存照片")
 
-    # Two options: camera or album
     capture_method = st.radio(
         "选择方式",
         ["📸 直接拍照", "🖼 从相册选择"],
@@ -500,75 +482,45 @@ with tabs[3]:
         key="capture_method",
     )
 
-    uploaded_image = None
+    img_bytes = None
 
     if capture_method == "📸 直接拍照":
-        camera_img = st.camera_input("对准错题拍照", key="camera_input", label_visibility="collapsed")
-        if camera_img:
-            uploaded_image = Image.open(camera_img)
-            st.image(uploaded_image, caption="拍摄的照片", use_container_width=True)
+        img_bytes = st.camera_input("对准错题拍照", key="camera_input", label_visibility="collapsed")
     else:
-        file_img = st.file_uploader("从相册选择", type=["png", "jpg", "jpeg", "webp"], key="file_upload", label_visibility="collapsed")
-        if file_img:
-            uploaded_image = Image.open(file_img)
-            st.image(uploaded_image, caption="选择的图片", use_container_width=True)
+        img_bytes = st.file_uploader("从相册选择", type=["png", "jpg", "jpeg", "webp"], key="file_upload", label_visibility="collapsed")
 
-    # OCR section — shared by both inputs
-    if uploaded_image:
-        if st.button("🔍 开始识别文字", use_container_width=True, key="run_ocr"):
-            with st.spinner("⏳ 正在加载 OCR 引擎（首次使用需下载模型，约需 1-2 分钟）..."):
-                try:
-                    recognized_text, saved_path = run_ocr(uploaded_image)
-                    st.session_state.ocr_text = recognized_text
-                    st.session_state.ocr_image_path = saved_path
-                    st.success(f"✅ 识别成功！")
-                    st.text_area("识别内容", recognized_text, height=200, key="ocr_result_display")
-                except ValueError as e:
-                    st.warning(f"⚠️ {e}")
-                    st.session_state.ocr_text = ""
-                    st.session_state.ocr_image_path = ""
-                except Exception as e:
-                    err_msg = str(e)
-                    if "Downloading" in err_msg or "download" in err_msg.lower():
-                        st.error("🌐 OCR 模型下载失败，请检查网络连接后重试。如果在 Streamlit Cloud 上，冷启动时下载可能超时，请稍等片刻再试。")
-                    else:
-                        st.error(f"OCR 识别失败: {e}")
-                    st.session_state.ocr_text = ""
-                    st.session_state.ocr_image_path = ""
+    if img_bytes:
+        uploaded_image = Image.open(img_bytes)
+        st.image(uploaded_image, caption="预览", use_container_width=True)
 
-        # Show save form if OCR completed
-        if "ocr_text" in st.session_state and st.session_state.ocr_text:
-            st.markdown("---")
-            st.markdown("### 💾 保存为错题")
+        # Save the image locally
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+        saved_path = os.path.join(IMAGE_DIR, f"photo_{timestamp}.png")
+        uploaded_image.save(saved_path)
 
-            sc1, sc2 = st.columns(2)
-            with sc1:
-                ocr_subject = st.selectbox("科目", ["数学", "英语", "语文", "物理", "化学", "生物", "历史", "地理", "政治", "其他"], key="ocr_subject")
-            with sc2:
-                ocr_reason = st.text_input("错误原因分析", placeholder="例如：计算失误、概念不清...", key="ocr_reason")
+        st.markdown("---")
+        st.markdown("### 💾 保存为错题")
 
-            ocr_content = st.text_area("错题内容（可编辑）", value=st.session_state.ocr_text, height=150, key="ocr_content_edit")
+        sc1, sc2 = st.columns(2)
+        with sc1:
+            photo_subject = st.selectbox("科目", ["数学", "英语", "语文", "物理", "化学", "生物", "历史", "地理", "政治", "其他"], key="photo_subject")
+        with sc2:
+            photo_reason = st.text_input("错误原因分析", placeholder="例如：计算失误、概念不清...", key="photo_reason")
 
-            if st.button("💾 保存错题", use_container_width=True, key="save_ocr"):
-                if ocr_content.strip():
-                    add_entry(
-                        datetime.date.today().strftime("%Y-%m-%d"),
-                        "错题",
-                        ocr_subject,
-                        ocr_content.strip(),
-                        ocr_reason.strip(),
-                        st.session_state.get("ocr_image_path", ""),
-                    )
-                    st.success("✅ 错题已保存！")
-                    for k in ["ocr_text", "ocr_image_path"]:
-                        if k in st.session_state:
-                            del st.session_state[k]
-                    st.rerun()
-                else:
-                    st.error("内容不能为空！")
+        photo_desc = st.text_area("题目描述（可选）", placeholder="简要描述这道错题...", height=80, key="photo_desc")
 
+        if st.button("💾 保存错题", use_container_width=True, key="save_photo"):
+            add_entry(
+                datetime.date.today().strftime("%Y-%m-%d"),
+                "错题",
+                photo_subject,
+                photo_desc.strip() or "（拍照错题）",
+                photo_reason.strip(),
+                saved_path,
+            )
+            st.success("✅ 错题照片已保存！")
+            st.rerun()
 
-# ═══════════════════════════════════════
 # TAB 5: Review Mode
 # ═══════════════════════════════════════
 with tabs[4]:
