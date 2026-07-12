@@ -459,17 +459,27 @@ with tabs[3]:
         img_bytes = st.file_uploader("从相册选择", type=["png", "jpg", "jpeg", "webp"], key="file_upload", label_visibility="collapsed")
 
     if img_bytes:
-        # Read bytes first (avoid stream consumption issues)
+        # Read bytes and save immediately
         img_data = img_bytes.getvalue() if hasattr(img_bytes, "getvalue") else img_bytes.read()
-        img_bytes.seek(0)  # Reset for Image.open
+        img_bytes.seek(0)
         uploaded_image = Image.open(img_bytes)
         st.image(uploaded_image, caption="预览", use_container_width=True)
 
-        # Save raw bytes to disk (more reliable than PIL save)
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
         saved_path = os.path.join(IMAGE_DIR, f"photo_{timestamp}.png")
         with open(saved_path, "wb") as f:
             f.write(img_data)
+
+        # Store path in session state so it survives rerun
+        st.session_state.photo_saved_path = saved_path
+
+    # Show save form if we have a pending photo path
+    if "photo_saved_path" in st.session_state and st.session_state.photo_saved_path:
+        saved_path = st.session_state.photo_saved_path
+
+        # Show the saved photo
+        if os.path.exists(saved_path):
+            st.image(saved_path, caption="待保存的照片", use_container_width=True)
 
         st.markdown("---")
         st.markdown("### 💾 保存为错题")
@@ -492,6 +502,13 @@ with tabs[3]:
                 saved_path,
             )
             st.success("✅ 错题照片已保存！")
+            del st.session_state.photo_saved_path
+            st.rerun()
+
+        if st.button("❌ 取消", key="cancel_photo"):
+            if os.path.exists(saved_path):
+                os.remove(saved_path)
+            del st.session_state.photo_saved_path
             st.rerun()
 
 # TAB 5: Review Mode
