@@ -53,8 +53,8 @@ def display_image(img_path_or_b64, caption="", width=300):
         if os.path.exists(img_path_or_b64):
             st.image(img_path_or_b64, caption=caption, width=width)
 
-DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "study_data.db")
-IMAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images")
+DB_FILE = os.path.join(os.getcwd(), "study_data.db")
+IMAGE_DIR = os.path.join(os.getcwd(), "images")
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
 def init_db():
