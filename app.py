@@ -11,36 +11,157 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="个人知识与错题库", page_icon="📚", layout="wide")
 
+
 # ── CSS ──
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-    .main-header { font-size: 2rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0; }
-    .sub-header { font-size: 0.9rem; color: #6b7280; margin-top: -0.5rem; margin-bottom: 1rem; }
-    .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 1.2rem; color: white; text-align: center; box-shadow: 0 4px 15px rgba(102,126,234,0.3); }
-    .stat-card.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); box-shadow: 0 4px 15px rgba(17,153,142,0.3); }
-    .stat-card.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); box-shadow: 0 4px 15px rgba(240,147,251,0.3); }
-    .stat-card.blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); box-shadow: 0 4px 15px rgba(79,172,254,0.3); }
-    .stat-value { font-size: 2rem; font-weight: 700; }
-    .stat-label { font-size: 0.85rem; opacity: 0.9; }
-    .stButton > button { border-radius: 8px !important; font-weight: 600 !important; transition: all 0.2s !important; border: none !important; }
-    .stButton > button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; }
-    @media (max-width: 768px) {
-        .main-header { font-size: 1.3rem !important; }
-        .stat-card { padding: 0.8rem !important; }
-        .stat-value { font-size: 1.4rem !important; }
-        .stat-label { font-size: 0.7rem !important; }
-        .stButton > button { font-size: 0.9rem !important; padding: 0.7rem 0.5rem !important; min-height: 44px !important; }
-        .stTabs [role="tab"] { font-size: 0.75rem !important; padding: 0.5rem 0.4rem !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    /* ── Global ── */
+    * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important; }
+    .stApp { background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 20px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a5b4fc; }
+
+    /* ── Header ── */
+    .main-header {
+        font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 40%, #a855f7 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-clip: text; margin-bottom: 0.15rem;
     }
-    @media (max-width: 480px) {
-        .main-header { font-size: 1.1rem !important; }
-        .stat-value { font-size: 1.2rem !important; }
+    .sub-header { font-size: 0.9rem; color: #94a3b8; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; }
+
+    /* ── Stat Cards ── */
+    .stat-card {
+        background: white; border-radius: 16px; padding: 1.4rem 1rem;
+        text-align: center; border: 1px solid #e8ecf1;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        border-radius: 16px 16px 0 0;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+    .stat-card.purple::before { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+    .stat-card.green::before { background: linear-gradient(90deg, #059669, #10b981); }
+    .stat-card.orange::before { background: linear-gradient(90deg, #f59e0b, #f97316); }
+    .stat-card.blue::before { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+    .stat-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+    .stat-value {
+        font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em;
+        color: #1e293b;
+    }
+    .stat-label { font-size: 0.8rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── Tabs ── */
+    .stTabs [role="tablist"] {
+        background: white; border-radius: 14px; padding: 5px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04); border: 1px solid #e8ecf1; gap: 2px;
+    }
+    .stTabs [role="tab"] {
+        border-radius: 10px !important; padding: 0.55rem 1rem !important;
+        font-weight: 600 !important; font-size: 0.85rem !important;
+        transition: all 0.2s ease !important; border: none !important;
+        color: #94a3b8 !important; background: transparent !important;
+    }
+    .stTabs [role="tab"][aria-selected="true"] {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+        color: white !important; box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+    }
+    .stTabs [role="tab"]:hover:not([aria-selected="true"]) {
+        background: #f1f5f9 !important; color: #6366f1 !important;
+    }
+
+    /* ── Buttons ── */
+    .stButton > button {
+        border-radius: 10px !important; font-weight: 600 !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        border: none !important; letter-spacing: 0.01em;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .stButton > button:hover {
+        transform: translateY(-1.5px);
+        box-shadow: 0 6px 20px rgba(99,102,241,0.2) !important;
+    }
+    .stButton > button:active { transform: translateY(0); }
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6) !important; color: white !important;
+    }
+    .stButton > button[kind="secondary"] {
+        background: white !important; color: #ef4444 !important; border: 1.5px solid #fecaca !important;
+    }
+
+    /* ── Expander ── */
+    .stExpander {
+        border-radius: 12px !important; border: 1px solid #e8ecf1 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: all 0.2s ease;
+        background: white !important;
+    }
+    .stExpander:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+
+    /* ── Review Card ── */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 16px !important; border: 1px solid #e8ecf1 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+        background: white !important; overflow: hidden;
+    }
+
+    /* ── Progress bar ── */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7) !important;
+        border-radius: 20px !important;
+    }
+    .stProgress { border-radius: 20px !important; background: #e2e8f0 !important; }
+
+    /* ── Inputs ── */
+    .stTextInput input, .stTextArea textarea {
+        border-radius: 10px !important; border: 1.5px solid #e2e8f0 !important;
+        transition: all 0.2s ease !important;
+    }
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #818cf8 !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.1) !important;
+    }
+
+    /* ── Dividers ── */
+    hr { border: none; height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); margin: 1.2rem 0; }
+
+    /* ── Camera / Upload ── */
+    section[data-testid="stCameraInput"] {
+        border-radius: 16px !important; overflow: hidden;
+        border: 2px dashed #c7d2fe !important; background: #f8faff;
+    }
+    .stFileUploader {
+        border-radius: 16px !important; border: 2px dashed #c7d2fe !important; background: #f8faff;
+    }
+
+    /* ── Radio buttons ── */
+    div[role="radiogroup"] { background: white; border-radius: 12px; padding: 4px; border: 1px solid #e8ecf1; }
+    div[role="radiogroup"] label {
+        border-radius: 9px !important; padding: 0.45rem 0.9rem !important;
+        font-weight: 500 !important; transition: all 0.2s ease !important;
+    }
+    div[role="radiogroup"] label[data-selected="true"] {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6) !important; color: white !important;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+        .main-header { font-size: 1.4rem !important; }
+        .stat-value { font-size: 1.6rem !important; }
+        .stat-card { padding: 0.9rem 0.6rem !important; }
+        .stat-icon { font-size: 1.2rem !important; }
+        .stButton > button { font-size: 0.85rem !important; padding: 0.6rem 0.5rem !important; min-height: 44px !important; }
+        .stTabs [role="tab"] { font-size: 0.7rem !important; padding: 0.4rem 0.55rem !important; }
     }
 </style>
 """, unsafe_allow_html=True)
-
 # ── Helpers ──
 def display_image(img_path_or_b64, caption="", width=300):
     """Display image from base64 string or file path."""
@@ -137,12 +258,12 @@ with tabs[0]:
         st.info("👋 欢迎！目前还没有数据，先去「添加」或「拍照」开始吧！")
     else:
         c1, c2, c3, c4 = st.columns(4)
-        with c1: st.markdown(f'<div class="stat-card"><div class="stat-value">{stats["total"]}</div><div class="stat-label">总记录</div></div>', unsafe_allow_html=True)
-        with c2: st.markdown(f'<div class="stat-card green"><div class="stat-value">{stats["knowledge"]}</div><div class="stat-label">知识点</div></div>', unsafe_allow_html=True)
-        with c3: st.markdown(f'<div class="stat-card orange"><div class="stat-value">{stats["error"]}</div><div class="stat-label">错题</div></div>', unsafe_allow_html=True)
+        with c1: st.markdown(f'<div class="stat-card purple"><div class="stat-icon">📋</div><div class="stat-value">{stats["total"]}</div><div class="stat-label">总记录</div></div>', unsafe_allow_html=True)
+        with c2: st.markdown(f'<div class="stat-card green"><div class="stat-icon">💡</div><div class="stat-value">{stats["knowledge"]}</div><div class="stat-label">知识点</div></div>', unsafe_allow_html=True)
+        with c3: st.markdown(f'<div class="stat-card orange"><div class="stat-icon">❌</div><div class="stat-value">{stats["error"]}</div><div class="stat-label">错题</div></div>', unsafe_allow_html=True)
         with c4:
             streak = len(stats["recent"]) if not stats["recent"].empty else 0
-            st.markdown(f'<div class="stat-card blue"><div class="stat-value">{streak}</div><div class="stat-label">活跃天数</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-card blue"><div class="stat-icon">🔥</div><div class="stat-value">{streak}</div><div class="stat-label">活跃天数</div></div>', unsafe_allow_html=True)
         st.markdown("---")
         col_left, col_right = st.columns(2)
         with col_left:
