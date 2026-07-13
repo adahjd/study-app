@@ -8,7 +8,6 @@ from io import BytesIO
 from PIL import Image, ImageEnhance
 import plotly.express as px
 import plotly.graph_objects as go
-import streamlit.components.v1 as components
 
 st.set_page_config(page_title="个人知识与错题库", page_icon="📚", layout="wide")
 
@@ -156,7 +155,7 @@ def process_image(raw_bytes):
     # Resize if wider than 1920px
     if img.width > 1920:
         ratio = 1920 / img.width
-        img = img.resize((1920, int(img.height * ratio)), Image.LANCZOS)
+        img = img.resize((1920, int(img.height * ratio)), Image.Resampling.LANCZOS)
     # Sharpen
     enhancer = ImageEnhance.Sharpness(img)
     img = enhancer.enhance(1.8)
@@ -434,52 +433,9 @@ elif current_tab == "📷 拍照":
             </div>
             """, unsafe_allow_html=True)
 
-            # Native HTML camera component - opens phone's camera app
-            cam_html = """
-            <script>
-            function takePhoto() {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.capture = 'environment';
-                input.onchange = (e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        window.parent.postMessage({
-                            isStreamlitMessage: true,
-                            type: 'streamlit:setComponentValue',
-                            value: reader.result
-                        }, '*');
-                    };
-                    reader.readAsDataURL(file);
-                };
-                input.click();
-            }
-
-            // Auto-trigger on mount
-            const el = document.getElementById('cam-trigger');
-            if (el) el.onclick = takePhoto;
-
-            // Also set up the Streamlit listener
-            window.addEventListener('message', (e) => {
-                if (e.data.type === 'streamlit:render') {
-                    setTimeout(() => {
-                        const btn = document.getElementById('cam-trigger');
-                        if (btn) btn.onclick = takePhoto;
-                    }, 100);
-                }
-            });
-            </script>
-            <button id="cam-trigger" style="display:none">拍照</button>
-            <div onclick="takePhoto()" style="position:absolute;top:0;left:0;right:0;bottom:0;cursor:pointer"></div>
-            """
-            cam_result = components.html(cam_html, height=1, scrolling=False)
-            if cam_result and isinstance(cam_result, str) and cam_result.startswith("data:image"):
-                # Parse data URI: data:image/xxx;base64,xxxx
-                b64_part = cam_result.split(",", 1)[1] if "," in cam_result else cam_result
-                raw_bytes = base64.b64decode(b64_part)
+            cam_photo = st.camera_input("", key="cam_input", label_visibility="collapsed")
+            if cam_photo:
+                raw_bytes = cam_photo.getvalue() if hasattr(cam_photo, "getvalue") else cam_photo.read()
                 st.session_state.photo_b64 = process_image(raw_bytes)
                 st.rerun()
 
