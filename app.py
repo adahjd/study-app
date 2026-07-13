@@ -360,34 +360,100 @@ with tabs[2]:
             csv_data = filtered[["date","type","subject","content","detail"]].to_csv(index=False).encode("utf-8-sig")
             st.download_button("📥 导出 CSV", csv_data, "学习记录导出.csv", "text/csv", use_container_width=True)
 
+
 # ══ TAB 4: Photo Capture ══
 with tabs[3]:
-    st.subheader("📷 拍照收集错题")
-    st.caption("拍照或从相册选择，照片存入数据库")
+    st.markdown("""
+    <style>
+        .photo-step-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 1.5rem; }
+        .photo-step-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; font-weight: 700; background: #e2e8f0; color: #94a3b8; transition: all 0.3s ease; }
+        .photo-step-dot.active { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
+        .photo-step-dot.done { background: #10b981; color: white; }
+        .photo-step-line { flex: 1; height: 2px; max-width: 40px; background: #e2e8f0; border-radius: 2px; }
+        .photo-step-line.active { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+        .photo-step-line.done { background: #10b981; }
+        .photo-step-label { font-size: 0.7rem; color: #94a3b8; text-align: center; font-weight: 500; margin-top: 2px; }
+        .photo-step-label.active { color: #6366f1; font-weight: 700; }
+        .photo-step-label.done { color: #10b981; }
+        .photo-camera-card {
+            background: linear-gradient(135deg, #f8faff 0%, #eef2ff 100%);
+            border: 2px dashed #c7d2fe; border-radius: 20px; padding: 1.5rem;
+            text-align: center; transition: all 0.3s ease;
+        }
+        .photo-camera-card:hover { border-color: #818cf8; box-shadow: 0 4px 20px rgba(99,102,241,0.08); }
+        .photo-camera-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .photo-camera-title { font-size: 1.1rem; font-weight: 700; color: #6366f1; margin-bottom: 0.3rem; }
+        .photo-camera-hint { font-size: 0.8rem; color: #94a3b8; }
+        .photo-preview-frame {
+            border-radius: 16px; overflow: hidden; border: 3px solid white;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+            margin-bottom: 1rem;
+        }
+        .photo-save-card {
+            background: white; border-radius: 16px; padding: 1.5rem;
+            border: 1px solid #e8ecf1; box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-    capture_method = st.radio("选择方式", ["📸 直接拍照", "🖼 从相册选择"], horizontal=True, key="capture_method")
+    # Step indicator
+    has_photo = st.session_state.photo_b64 is not None
+    step1 = "active" if not has_photo else "done"
+    step2 = "active" if has_photo else ""
+    st.markdown(f"""
+    <div class="photo-step-row">
+        <div style="text-align:center">
+            <div class="photo-step-dot {step1}">📸</div>
+            <div class="photo-step-label {step1}">拍照</div>
+        </div>
+        <div class="photo-step-line {step1}"></div>
+        <div style="text-align:center">
+            <div class="photo-step-dot {step2}">💾</div>
+            <div class="photo-step-label {step2}">保存</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    capture_method = st.radio("", ["📸 直接拍照", "🖼 从相册选择"], horizontal=True, key="capture_method", label_visibility="collapsed")
 
     img_bytes = None
     if capture_method == "📸 直接拍照":
-        img_bytes = st.camera_input("对准错题拍照", key="camera_input", label_visibility="collapsed")
+        st.markdown("""
+        <div class="photo-camera-card">
+            <div class="photo-camera-icon">📸</div>
+            <div class="photo-camera-title">对准错题，点击下方拍照</div>
+            <div class="photo-camera-hint">确保题目清晰可见，光线充足</div>
+        </div>
+        """, unsafe_allow_html=True)
+        img_bytes = st.camera_input("", key="camera_input", label_visibility="collapsed")
     else:
-        img_bytes = st.file_uploader("从相册选择", type=["png", "jpg", "jpeg", "webp"], key="file_upload", label_visibility="collapsed")
+        st.markdown("""
+        <div class="photo-camera-card">
+            <div class="photo-camera-icon">🖼</div>
+            <div class="photo-camera-title">从相册选择错题照片</div>
+            <div class="photo-camera-hint">支持 PNG / JPG / WebP 格式</div>
+        </div>
+        """, unsafe_allow_html=True)
+        img_bytes = st.file_uploader("", type=["png", "jpg", "jpeg", "webp"], key="file_upload", label_visibility="collapsed")
 
     if img_bytes:
         raw_bytes = img_bytes.getvalue() if hasattr(img_bytes, "getvalue") else img_bytes.read()
         st.session_state.photo_b64 = base64.b64encode(raw_bytes).decode("utf-8")
-        st.image(raw_bytes, caption="预览", use_container_width=True)
+        st.markdown('<div class="photo-preview-frame">', unsafe_allow_html=True)
+        st.image(raw_bytes, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     if st.session_state.photo_b64:
-        st.markdown("---")
-        st.markdown("### 💾 保存为错题")
+        st.markdown('<div class="photo-save-card">', unsafe_allow_html=True)
+        st.markdown("#### 📋 错题信息")
         sc1, sc2 = st.columns(2)
         with sc1: photo_subject = st.selectbox("科目", ["数学", "英语", "语文", "物理", "化学", "生物", "历史", "地理", "政治", "其他"], key="photo_subject")
-        with sc2: photo_reason = st.text_input("错误原因分析", placeholder="例如：计算失误、概念不清...", key="photo_reason")
-        photo_desc = st.text_area("题目描述（可选）", placeholder="简要描述这道错题...", height=80, key="photo_desc")
-        bc1, bc2 = st.columns(2)
+        with sc2: photo_reason = st.text_input("错误原因", placeholder="计算失误、概念不清...", key="photo_reason")
+        photo_desc = st.text_area("题目描述（可选）", placeholder="简要描述这道错题，方便日后复习...", height=70, key="photo_desc")
+        bc1, bc2, bc3 = st.columns([2, 1, 1])
         with bc1:
-            if st.button("💾 保存错题", use_container_width=True, key="save_photo"):
+            if st.button("💾 保存错题", use_container_width=True, key="save_photo", type="primary"):
                 try:
                     conn = get_conn()
                     conn.execute("INSERT INTO entries (date,type,subject,content,detail,image_path) VALUES (?,?,?,?,?,?)",
@@ -399,8 +465,10 @@ with tabs[3]:
                     st.rerun()
                 except Exception as e:
                     st.error(f"保存失败: {e}")
-        with bc2:
-            if st.button("❌ 取消", key="cancel_photo"): st.session_state.photo_b64 = None; st.rerun()
+        with bc3:
+            if st.button("❌ 取消", key="cancel_photo", use_container_width=True): st.session_state.photo_b64 = None; st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
 
 # ══ TAB 5: Review ══
 with tabs[4]:
