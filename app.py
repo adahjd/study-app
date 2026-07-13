@@ -5,29 +5,23 @@ import os
 import datetime
 import base64
 from io import BytesIO
-from PIL import Image
+from PIL import Image, ImageEnhance
 import plotly.express as px
 import plotly.graph_objects as go
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="个人知识与错题库", page_icon="📚", layout="wide")
-
 
 # ── CSS ──
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-    /* ── Global ── */
     * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important; }
     .stApp { background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%); }
-
-    /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 20px; }
     ::-webkit-scrollbar-thumb:hover { background: #a5b4fc; }
-
-    /* ── Header ── */
     .main-header {
         font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em;
         background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 40%, #a855f7 100%);
@@ -35,8 +29,6 @@ st.markdown("""
         background-clip: text; margin-bottom: 0.15rem;
     }
     .sub-header { font-size: 0.9rem; color: #94a3b8; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; }
-
-    /* ── Stat Cards ── */
     .stat-card {
         background: white; border-radius: 16px; padding: 1.4rem 1rem;
         text-align: center; border: 1px solid #e8ecf1;
@@ -54,73 +46,31 @@ st.markdown("""
     .stat-card.orange::before { background: linear-gradient(90deg, #f59e0b, #f97316); }
     .stat-card.blue::before { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
     .stat-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
-    .stat-value {
-        font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em;
-        color: #1e293b;
-    }
+    .stat-value { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em; color: #1e293b; }
     .stat-label { font-size: 0.8rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-
-    /* ── Tabs ── */
-    .stTabs [role="tablist"] {
-        background: white; border-radius: 14px; padding: 5px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04); border: 1px solid #e8ecf1; gap: 2px;
-    }
-    .stTabs [role="tab"] {
-        border-radius: 10px !important; padding: 0.55rem 1rem !important;
-        font-weight: 600 !important; font-size: 0.85rem !important;
-        transition: all 0.2s ease !important; border: none !important;
-        color: #94a3b8 !important; background: transparent !important;
-    }
-    .stTabs [role="tab"][aria-selected="true"] {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
-        color: white !important; box-shadow: 0 2px 8px rgba(99,102,241,0.35);
-    }
-    .stTabs [role="tab"]:hover:not([aria-selected="true"]) {
-        background: #f1f5f9 !important; color: #6366f1 !important;
-    }
-
-    /* ── Buttons ── */
     .stButton > button {
         border-radius: 10px !important; font-weight: 600 !important;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
         border: none !important; letter-spacing: 0.01em;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
-    .stButton > button:hover {
-        transform: translateY(-1.5px);
-        box-shadow: 0 6px 20px rgba(99,102,241,0.2) !important;
-    }
+    .stButton > button:hover { transform: translateY(-1.5px); box-shadow: 0 6px 20px rgba(99,102,241,0.2) !important; }
     .stButton > button:active { transform: translateY(0); }
-    .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6) !important; color: white !important;
-    }
-    .stButton > button[kind="secondary"] {
-        background: white !important; color: #ef4444 !important; border: 1.5px solid #fecaca !important;
-    }
-
-    /* ── Expander ── */
+    .stButton > button[kind="primary"] { background: linear-gradient(135deg, #6366f1, #8b5cf6) !important; color: white !important; }
+    .stButton > button[kind="secondary"] { background: white !important; color: #ef4444 !important; border: 1.5px solid #fecaca !important; }
     .stExpander {
         border-radius: 12px !important; border: 1px solid #e8ecf1 !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: all 0.2s ease;
         background: white !important;
     }
     .stExpander:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
-
-    /* ── Review Card ── */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         border-radius: 16px !important; border: 1px solid #e8ecf1 !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
         background: white !important; overflow: hidden;
     }
-
-    /* ── Progress bar ── */
-    .stProgress > div > div {
-        background: linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7) !important;
-        border-radius: 20px !important;
-    }
+    .stProgress > div > div { background: linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7) !important; border-radius: 20px !important; }
     .stProgress { border-radius: 20px !important; background: #e2e8f0 !important; }
-
-    /* ── Inputs ── */
     .stTextInput input, .stTextArea textarea {
         border-radius: 10px !important; border: 1.5px solid #e2e8f0 !important;
         transition: all 0.2s ease !important;
@@ -128,43 +78,97 @@ st.markdown("""
     .stTextInput input:focus, .stTextArea textarea:focus {
         border-color: #818cf8 !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.1) !important;
     }
-
-    /* ── Dividers ── */
     hr { border: none; height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); margin: 1.2rem 0; }
-
-    /* ── Camera / Upload ── */
-    section[data-testid="stCameraInput"] {
-        border-radius: 16px !important; overflow: hidden;
-        border: 2px dashed #c7d2fe !important; background: #f8faff;
-    }
-    .stFileUploader {
-        border-radius: 16px !important; border: 2px dashed #c7d2fe !important; background: #f8faff;
-    }
-
-    /* ── Radio buttons ── */
+    .stFileUploader { border-radius: 16px !important; border: 2px dashed #c7d2fe !important; background: #f8faff; }
     div[role="radiogroup"] { background: white; border-radius: 12px; padding: 4px; border: 1px solid #e8ecf1; }
-    div[role="radiogroup"] label {
-        border-radius: 9px !important; padding: 0.45rem 0.9rem !important;
-        font-weight: 500 !important; transition: all 0.2s ease !important;
-    }
-    div[role="radiogroup"] label[data-selected="true"] {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6) !important; color: white !important;
-    }
 
-    /* ── Mobile ── */
+    /* ── Desktop tab nav ── */
+    .desktop-nav div[role="radiogroup"] {
+        display: flex !important; gap: 2px; border: none !important;
+        background: white !important; border-radius: 14px !important; padding: 5px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .desktop-nav div[role="radiogroup"] label {
+        border-radius: 10px !important; padding: 0.55rem 1rem !important;
+        font-weight: 600 !important; font-size: 0.85rem !important;
+        border: none !important; color: #94a3b8 !important; margin: 0 !important;
+    }
+    .desktop-nav div[role="radiogroup"] label[data-selected="true"] {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+        color: white !important; box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+    }
+    .desktop-nav div[role="radiogroup"] label:hover:not([data-selected="true"]) { background: #f1f5f9 !important; color: #6366f1 !important; }
+
+    /* ── Photo camera card ── */
+    .camera-card {
+        background: linear-gradient(135deg, #f8faff 0%, #eef2ff 100%);
+        border: 2px dashed #c7d2fe; border-radius: 20px; padding: 2rem;
+        text-align: center; transition: all 0.3s ease; cursor: pointer;
+    }
+    .camera-card:hover { border-color: #818cf8; box-shadow: 0 4px 20px rgba(99,102,241,0.1); }
+    .camera-icon { font-size: 3.5rem; margin-bottom: 0.5rem; }
+    .camera-title { font-size: 1.1rem; font-weight: 700; color: #6366f1; }
+    .camera-hint { font-size: 0.8rem; color: #94a3b8; margin-top: 0.3rem; }
+    .photo-preview-frame { border-radius: 16px; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 24px rgba(0,0,0,0.08); margin: 1rem 0; }
+    .photo-save-card { background: white; border-radius: 16px; padding: 1.5rem; border: 1px solid #e8ecf1; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+    .photo-step-dot { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; background: #e2e8f0; color: #94a3b8; }
+    .photo-step-dot.active { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
+    .photo-step-dot.done { background: #10b981; color: white; }
+
+    /* ── Mobile bottom nav ── */
+    .mobile-nav { display: none; }
     @media (max-width: 768px) {
+        .desktop-nav { display: none; }
+        .mobile-nav {
+            display: flex !important; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+            background: white; border-top: 1px solid #e8ecf1;
+            box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+            padding: 6px 0 env(safe-area-inset-bottom, 6px) 0;
+            justify-content: space-around;
+        }
+        .mobile-nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            padding: 4px 8px; border-radius: 8px; cursor: pointer;
+            font-size: 0.65rem; color: #94a3b8; font-weight: 500;
+            transition: all 0.2s ease; border: none; background: none;
+            min-width: 52px;
+        }
+        .mobile-nav-item .nav-icon { font-size: 1.3rem; }
+        .mobile-nav-item.active { color: #6366f1; font-weight: 700; }
+        .mobile-nav-item.active .nav-icon { color: #6366f1; }
         .main-header { font-size: 1.4rem !important; }
         .stat-value { font-size: 1.6rem !important; }
         .stat-card { padding: 0.9rem 0.6rem !important; }
         .stat-icon { font-size: 1.2rem !important; }
         .stButton > button { font-size: 0.85rem !important; padding: 0.6rem 0.5rem !important; min-height: 44px !important; }
-        .stTabs [role="tab"] { font-size: 0.7rem !important; padding: 0.4rem 0.55rem !important; }
+        body { padding-bottom: 80px !important; }
+        .camera-card { padding: 1.5rem 1rem !important; }
+        .camera-icon { font-size: 2.5rem !important; }
     }
 </style>
 """, unsafe_allow_html=True)
+
 # ── Helpers ──
+def process_image(raw_bytes):
+    """Enhance image clarity: resize to max 1920px, sharpen, convert to JPEG 90."""
+    img = Image.open(BytesIO(raw_bytes))
+    img = img.convert("RGB")
+    # Resize if wider than 1920px
+    if img.width > 1920:
+        ratio = 1920 / img.width
+        img = img.resize((1920, int(img.height * ratio)), Image.LANCZOS)
+    # Sharpen
+    enhancer = ImageEnhance.Sharpness(img)
+    img = enhancer.enhance(1.8)
+    # Contrast boost
+    contrast = ImageEnhance.Contrast(img)
+    img = contrast.enhance(1.15)
+    # Output as JPEG quality 90
+    buf = BytesIO()
+    img.save(buf, format="JPEG", quality=90, optimize=True)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
 def display_image(img_path_or_b64, caption="", width=300):
-    """Display image from base64 string or file path."""
     if not img_path_or_b64:
         return
     try:
@@ -244,15 +248,39 @@ def export_df(df):
 # ── Session ──
 if "edit_id" not in st.session_state: st.session_state.edit_id = None
 if "photo_b64" not in st.session_state: st.session_state.photo_b64 = None
+if "active_tab" not in st.session_state: st.session_state.active_tab = "📊 看板"
 
 # ── Header ──
 st.markdown('<p class="main-header">📚 个人知识与错题管理系统</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-header">记录 · 复习 · 掌握 · 成长</p>', unsafe_allow_html=True)
 
-tabs = st.tabs(["📊 看板", "📝 添加", "🔍 管理", "📷 拍照", "📋 复习"])
+# ── Navigation ──
+TABS = ["📊 看板", "📝 添加", "🔍 管理", "📷 拍照", "📋 复习"]
+TAB_ICONS = ["📊", "📝", "🔍", "📷", "📋"]
+
+# Desktop nav (styled as tabs)
+with st.container():
+    st.markdown('<div class="desktop-nav">', unsafe_allow_html=True)
+    current_tab = st.radio("", TABS, horizontal=True, label_visibility="collapsed", key="desktop_nav", index=TABS.index(st.session_state.active_tab))
+    if current_tab != st.session_state.active_tab:
+        st.session_state.active_tab = current_tab
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# Mobile bottom nav (CSS: visible only on mobile)
+st.markdown('<div class="mobile-nav">', unsafe_allow_html=True)
+for i, (tab, icon) in enumerate(zip(TABS, TAB_ICONS)):
+    active_cls = "active" if st.session_state.active_tab == tab else ""
+    col_label = tab.replace(" ", "")
+    if st.button(f'{icon} {tab.split(" ")[1] if " " in tab else tab}', key=f"mob_nav_{i}", use_container_width=False):
+        st.session_state.active_tab = tab
+        st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
+
+current_tab = st.session_state.active_tab
 
 # ══ TAB 1: Dashboard ══
-with tabs[0]:
+if current_tab == "📊 看板":
     stats = get_stats()
     if stats["total"] == 0:
         st.info("👋 欢迎！目前还没有数据，先去「添加」或「拍照」开始吧！")
@@ -284,7 +312,7 @@ with tabs[0]:
             else: st.info("暂无数据")
 
 # ══ TAB 2: Add Entry ══
-with tabs[1]:
+elif current_tab == "📝 添加":
     st.subheader("✏️ 记录新内容")
     if st.session_state.edit_id:
         st.warning(f"⚠️ 正在编辑记录 #{st.session_state.edit_id}")
@@ -302,7 +330,7 @@ with tabs[1]:
             else: add_entry(entry_date.strftime("%Y-%m-%d"), data_type, subject, content.strip(), detail.strip()); st.success(f"✅ 成功保存！"); st.rerun()
 
 # ══ TAB 3: Browse ══
-with tabs[2]:
+elif current_tab == "🔍 管理":
     st.subheader("🔍 浏览 & 管理")
     df = get_all_entries()
     if df.empty:
@@ -360,40 +388,18 @@ with tabs[2]:
             csv_data = filtered[["date","type","subject","content","detail"]].to_csv(index=False).encode("utf-8-sig")
             st.download_button("📥 导出 CSV", csv_data, "学习记录导出.csv", "text/csv", use_container_width=True)
 
-
 # ══ TAB 4: Photo Capture ══
-with tabs[3]:
+elif current_tab == "📷 拍照":
     st.markdown("""
     <style>
-        .photo-step-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 1.5rem; }
-        .photo-step-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; font-weight: 700; background: #e2e8f0; color: #94a3b8; transition: all 0.3s ease; }
-        .photo-step-dot.active { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
-        .photo-step-dot.done { background: #10b981; color: white; }
-        .photo-step-line { flex: 1; height: 2px; max-width: 40px; background: #e2e8f0; border-radius: 2px; }
-        .photo-step-line.active { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
-        .photo-step-line.done { background: #10b981; }
-        .photo-step-label { font-size: 0.7rem; color: #94a3b8; text-align: center; font-weight: 500; margin-top: 2px; }
-        .photo-step-label.active { color: #6366f1; font-weight: 700; }
-        .photo-step-label.done { color: #10b981; }
-        .photo-camera-card {
-            background: linear-gradient(135deg, #f8faff 0%, #eef2ff 100%);
-            border: 2px dashed #c7d2fe; border-radius: 20px; padding: 1.5rem;
-            text-align: center; transition: all 0.3s ease;
+        .camera-btn {
+            width: 100%; padding: 1.5rem; font-size: 1.1rem; font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;
+            border: none; border-radius: 14px; cursor: pointer;
+            box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+            transition: all 0.3s ease;
         }
-        .photo-camera-card:hover { border-color: #818cf8; box-shadow: 0 4px 20px rgba(99,102,241,0.08); }
-        .photo-camera-icon { font-size: 3rem; margin-bottom: 0.5rem; }
-        .photo-camera-title { font-size: 1.1rem; font-weight: 700; color: #6366f1; margin-bottom: 0.3rem; }
-        .photo-camera-hint { font-size: 0.8rem; color: #94a3b8; }
-        .photo-preview-frame {
-            border-radius: 16px; overflow: hidden; border: 3px solid white;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
-            margin-bottom: 1rem;
-        }
-        .photo-save-card {
-            background: white; border-radius: 16px; padding: 1.5rem;
-            border: 1px solid #e8ecf1; box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-        }
+        .camera-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(99,102,241,0.4); }
     </style>
     """, unsafe_allow_html=True)
 
@@ -402,55 +408,115 @@ with tabs[3]:
     step1 = "active" if not has_photo else "done"
     step2 = "active" if has_photo else ""
     st.markdown(f"""
-    <div class="photo-step-row">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap">
         <div style="text-align:center">
             <div class="photo-step-dot {step1}">📸</div>
-            <div class="photo-step-label {step1}">拍照</div>
+            <div style="font-size:0.7rem;color:{'#6366f1' if step1 else '#94a3b8'};font-weight:600;margin-top:4px">拍照</div>
         </div>
-        <div class="photo-step-line {step1}"></div>
+        <div style="width:40px;height:2px;background:{'#10b981' if step1=='done' else '#e2e8f0'};border-radius:2px"></div>
         <div style="text-align:center">
             <div class="photo-step-dot {step2}">💾</div>
-            <div class="photo-step-label {step2}">保存</div>
+            <div style="font-size:0.7rem;color:{'#6366f1' if step2 else '#94a3b8'};font-weight:600;margin-top:4px">保存</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    capture_method = st.radio("", ["📸 直接拍照", "🖼 从相册选择"], horizontal=True, key="capture_method", label_visibility="collapsed")
+    if not st.session_state.photo_b64:
+        # Camera + album options
+        cam_col1, cam_col2 = st.columns(2)
 
-    img_bytes = None
-    if capture_method == "📸 直接拍照":
-        st.markdown("""
-        <div class="photo-camera-card">
-            <div class="photo-camera-icon">📸</div>
-            <div class="photo-camera-title">对准错题，点击下方拍照</div>
-            <div class="photo-camera-hint">确保题目清晰可见，光线充足</div>
-        </div>
-        """, unsafe_allow_html=True)
-        img_bytes = st.camera_input("", key="camera_input", label_visibility="collapsed")
-    else:
-        st.markdown("""
-        <div class="photo-camera-card">
-            <div class="photo-camera-icon">🖼</div>
-            <div class="photo-camera-title">从相册选择错题照片</div>
-            <div class="photo-camera-hint">支持 PNG / JPG / WebP 格式</div>
-        </div>
-        """, unsafe_allow_html=True)
-        img_bytes = st.file_uploader("", type=["png", "jpg", "jpeg", "webp"], key="file_upload", label_visibility="collapsed")
+        with cam_col1:
+            st.markdown("""
+            <div class="camera-card">
+                <div class="camera-icon">📸</div>
+                <div class="camera-title">高清拍照</div>
+                <div class="camera-hint">调用系统相机 · 全分辨率</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    if img_bytes:
-        raw_bytes = img_bytes.getvalue() if hasattr(img_bytes, "getvalue") else img_bytes.read()
-        st.session_state.photo_b64 = base64.b64encode(raw_bytes).decode("utf-8")
-        st.markdown('<div class="photo-preview-frame">', unsafe_allow_html=True)
-        st.image(raw_bytes, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            # Native HTML camera component - opens phone's camera app
+            cam_html = """
+            <script>
+            function takePhoto() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.capture = 'environment';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        window.parent.postMessage({
+                            isStreamlitMessage: true,
+                            type: 'streamlit:setComponentValue',
+                            value: reader.result
+                        }, '*');
+                    };
+                    reader.readAsDataURL(file);
+                };
+                input.click();
+            }
 
+            // Auto-trigger on mount
+            const el = document.getElementById('cam-trigger');
+            if (el) el.onclick = takePhoto;
+
+            // Also set up the Streamlit listener
+            window.addEventListener('message', (e) => {
+                if (e.data.type === 'streamlit:render') {
+                    setTimeout(() => {
+                        const btn = document.getElementById('cam-trigger');
+                        if (btn) btn.onclick = takePhoto;
+                    }, 100);
+                }
+            });
+            </script>
+            <button id="cam-trigger" style="display:none">拍照</button>
+            <div onclick="takePhoto()" style="position:absolute;top:0;left:0;right:0;bottom:0;cursor:pointer"></div>
+            """
+            cam_result = components.html(cam_html, height=1, scrolling=False)
+            if cam_result and isinstance(cam_result, str) and cam_result.startswith("data:image"):
+                # Parse data URI: data:image/xxx;base64,xxxx
+                b64_part = cam_result.split(",", 1)[1] if "," in cam_result else cam_result
+                raw_bytes = base64.b64decode(b64_part)
+                st.session_state.photo_b64 = process_image(raw_bytes)
+                st.rerun()
+
+        with cam_col2:
+            st.markdown("""
+            <div class="camera-card">
+                <div class="camera-icon">🖼</div>
+                <div class="camera-title">从相册选择</div>
+                <div class="camera-hint">PNG / JPG / WebP</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            album_file = st.file_uploader("", type=["png", "jpg", "jpeg", "webp"], key="album_upload", label_visibility="collapsed")
+            if album_file:
+                raw_bytes = album_file.getvalue() if hasattr(album_file, "getvalue") else album_file.read()
+                st.session_state.photo_b64 = process_image(raw_bytes)
+                st.rerun()
+
+    # Show save form
     if st.session_state.photo_b64:
         st.markdown('<div class="photo-save-card">', unsafe_allow_html=True)
+        # Preview
+        try:
+            img_data = base64.b64decode(st.session_state.photo_b64)
+            st.markdown('<div class="photo-preview-frame">', unsafe_allow_html=True)
+            st.image(img_data, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            # Show processed file size
+            size_kb = len(img_data) / 1024
+            st.caption(f"📐 处理后大小: {size_kb:.0f} KB")
+        except: pass
+
         st.markdown("#### 📋 错题信息")
         sc1, sc2 = st.columns(2)
         with sc1: photo_subject = st.selectbox("科目", ["数学", "英语", "语文", "物理", "化学", "生物", "历史", "地理", "政治", "其他"], key="photo_subject")
         with sc2: photo_reason = st.text_input("错误原因", placeholder="计算失误、概念不清...", key="photo_reason")
-        photo_desc = st.text_area("题目描述（可选）", placeholder="简要描述这道错题，方便日后复习...", height=70, key="photo_desc")
+        photo_desc = st.text_area("题目描述（可选）", placeholder="简要描述这道错题...", height=70, key="photo_desc")
         bc1, bc2, bc3 = st.columns([2, 1, 1])
         with bc1:
             if st.button("💾 保存错题", use_container_width=True, key="save_photo", type="primary"):
@@ -469,9 +535,8 @@ with tabs[3]:
             if st.button("❌ 取消", key="cancel_photo", use_container_width=True): st.session_state.photo_b64 = None; st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-
 # ══ TAB 5: Review ══
-with tabs[4]:
+elif current_tab == "📋 复习":
     st.subheader("📋 智能复习")
     df = get_all_entries()
     if df.empty:
